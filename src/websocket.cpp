@@ -20,17 +20,6 @@ void handleWebSocket() {
     webSocket.loop();
 }
 
-// Обработка событий WebSocket
-void webSocketEvent(uint8_t clientNum, WStype_t type, uint8_t *payload, size_t length) {
-    if (type == WStype_TEXT) {
-        String message = String((char *)payload);
-
-
-        // Обработка других команд...
-        sendDebugInfo();
-    }
-}
-
 void sendDebugInfo() {
     String debugInfo = "{";
     debugInfo += "\"sensor1_address\": \"" + getSensorAddress(0) + "\",";
