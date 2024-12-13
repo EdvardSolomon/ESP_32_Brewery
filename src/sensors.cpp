@@ -1,3 +1,4 @@
+#include <Arduino.h>
 #include "sensors.h"
 #include <OneWire.h>
 #include <DallasTemperature.h>
@@ -27,9 +28,9 @@ float getTemperature(int sensorIndex) {
 String getSensorAddress(int sensorIndex) {
     DeviceAddress address;
     if (sensorIndex == 0 && sensors.getAddress(sensor1, 0)) {
-        address = sensor1;
+        memcpy(address, sensor1, sizeof(DeviceAddress)); // Копирование массива
     } else if (sensorIndex == 1 && sensors.getAddress(sensor2, 1)) {
-        address = sensor2;
+        memcpy(address, sensor2, sizeof(DeviceAddress)); // Копирование массива
     } else {
         return "not_found";
     }
