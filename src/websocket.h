@@ -2,13 +2,14 @@
 #define WEBSOCKET_H
 
 #include <Arduino.h>
-#include <WebSocketsServer.h> 
+#include <WebSocketsServer.h>
 
-extern String operationMode;
+// Тип для колбэка обработки сообщений
+typedef void (*WebSocketMessageHandler)(const String& message);
 
-void initWebSocket();
+// Интерфейс WebSocket
+void initWebSocket(WebSocketMessageHandler handler);
 void handleWebSocket();
-void sendDebugInfo();
-void webSocketEvent(uint8_t clientNum, WStype_t type, uint8_t *payload, size_t length);
+void sendMessageToAll(const String& message);
 
 #endif // WEBSOCKET_H

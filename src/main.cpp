@@ -1,45 +1,77 @@
 #include <WiFi.h>
+#include <ArduinoJson.h>
+#include "websocket.h"
 #include "pauses.h"
 #include "sensors.h"
 #include "control.h"
-#include "websocket.h"
 
-// Wi-Fi credentials
-const char* ssid = "59";
-const char* password = "universal";
-
-// Определение пина встроенного светодиода
-#define LED_PIN 2 // На ESP32 встроенный светодиод обычно подключен к GPIO2
+void handleMessage(const String& message) {
+    if (message.startsWith("SET_PAUSE_COUNT:")) {
+        int count = message.substring(16).toInt();
+        setPauseCount(count); // Используем функцию вместо прямого доступа к переменной
+    } else if (message.startsWith("UPDATE_PAUSE:")) {
+        int index, time;
+        float temperature, hysteresis;
+        sscanf(message.c_str(), "UPDATE_PAUSE:%d:%f:%f:%d", &index, &temperature, &hysteresis, &time);
+        updatePause(index - 1, temperature, hysteresis, time); // Используем функцию
+    }
+}
 
 void setup() {
     Serial.begin(115200);
-    pinMode(LED_PIN, OUTPUT); // Установить светодиод как выход
-
-    // Попытка подключения к Wi-Fi
-    WiFi.begin(ssid, password);
-
+    WiFi.begin("59", "universal");
     while (WiFi.status() != WL_CONNECTED) {
-        // Светодиод мигает, пока нет подключения
-        digitalWrite(LED_PIN, HIGH);
-        delay(500);
-        digitalWrite(LED_PIN, LOW);
-        delay(500);
+        delay(1000);
+        Serial.print(".");
     }
-    Serial.println("Wi-Fi подключен!");
+    Serial.println("\nWi-Fi подключен");
     Serial.print("IP адрес: ");
     Serial.println(WiFi.localIP());
-    // Если подключение установлено, выключить светодиод
-    digitalWrite(LED_PIN, LOW);
+
+    initPauses();
+    initSensors();
+    initWebSocket(handleMessage);
 }
 
+
 void loop() {
-    // Если подключение потеряно, светодиод начнет мигать
-    if (WiFi.status() != WL_CONNECTED) {
-        digitalWrite(LED_PIN, HIGH);
-        delay(100);
-        digitalWrite(LED_PIN, LOW);
-        delay(100);
-    } else {
-        digitalWrite(LED_PIN, LOW); // Светодиод выключен при подключении
+    handleWebSocket(); // Обрабатывает WebSocket-события
+
+    // Отправка данных раз в секунду
+    static unsigned long lastSendTime = 0;
+    if (millis() - lastSendTime > 5000) {
+        lastSendTime = millis();
+
+        // Создайте JSON-документ с заранее определенным размером
+        StaticJsonDocument<1024> doc; 
+
+        unsigned long start = millis();
+        appendSensorsInfoToJSON(doc);
+        unsigned long sensorsTime = millis();
+        Serial.println("Sensors JSON time: " + String(sensorsTime - start) + "ms");
+
+        start = millis();
+        appendPausesInfoToJSON(doc);
+        unsigned long pausesTime = millis();
+        Serial.println("Pauses JSON time: " + String(pausesTime - start) + "ms");
+
+        start = millis();
+        appendControlInfoToJSON(doc);
+        unsigned long controlTime = millis();
+        Serial.println("Control JSON time: " + String(controlTime - start) + "ms");
+
+        // Преобразуйте JSON-документ в строку
+        String debugInfo;
+        serializeJson(doc, debugInfo);
+        
+        unsigned long jsonTime = millis();
+        Serial.println("JSON generation time: " + String(jsonTime - lastSendTime) + "ms");
+
+        sendMessageToAll(debugInfo);
+
+        unsigned long sendTime = millis();
+        Serial.println("Send time: " + String(sendTime - jsonTime) + "ms");
     }
 }
+
+

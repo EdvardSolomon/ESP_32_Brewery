@@ -1,20 +1,20 @@
 #ifndef PAUSES_H
 #define PAUSES_H
 
-#define MAX_PAUSES 10 // Максимальное количество пауз
+#include <Arduino.h>
+#include <ArduinoJson.h>
 
-// Структура для описания паузы
 struct Pause {
-    float temperature; // Температура
-    float hysteresis;  // Гистерезис
-    int time;          // Время в минутах
+    float temperature;
+    float hysteresis;
+    int time;
 };
 
-// Объявление массива пауз и их количества
-extern Pause pauses[MAX_PAUSES];
-extern int pauseCount;
-
-// Функция инициализации пауз
 void initPauses();
+void setPauseCount(int count);
+void updatePause(int index, float temperature, float hysteresis, int time);
+
+// Новая функция для добавления информации о паузах в JSON-документ
+void appendPausesInfoToJSON(JsonDocument& doc);
 
 #endif // PAUSES_H

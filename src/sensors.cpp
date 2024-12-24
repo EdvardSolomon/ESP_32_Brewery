@@ -1,4 +1,3 @@
-#include <Arduino.h>
 #include "sensors.h"
 #include <OneWire.h>
 #include <DallasTemperature.h>
@@ -9,19 +8,32 @@ OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
 DeviceAddress sensor1, sensor2;
 
+unsigned long lastTemperatureRequest = 0;  // Время последнего запроса температуры
+
 void initSensors() {
     sensors.begin();
     sensors.getAddress(sensor1, 0);
     sensors.getAddress(sensor2, 1);
 }
 
-float getTemperature(int sensorIndex) {
-    sensors.requestTemperatures();
+void requestTemperature() {
+    sensors.requestTemperatures();  // Отправляем запрос на измерение температуры
+    lastTemperatureRequest = millis();
+}
+
+float getTemperatureNonBlocking(int sensorIndex) {
+    // Проверяем, прошло ли достаточно времени (750 мс для DS18B20)
+    if (millis() - lastTemperatureRequest < 750) {
+        return NAN;  // Данные еще не готовы
+    }
+
+    // Читаем температуру с датчиков
     if (sensorIndex == 0 && sensors.getAddress(sensor1, 0)) {
         return sensors.getTempC(sensor1);
     } else if (sensorIndex == 1 && sensors.getAddress(sensor2, 1)) {
         return sensors.getTempC(sensor2);
     }
+
     return NAN;
 }
 
@@ -41,4 +53,15 @@ String getSensorAddress(int sensorIndex) {
         addr += String(address[i], HEX);
     }
     return addr;
+}
+
+void appendSensorsInfoToJSON(JsonDocument& doc) {
+    JsonArray sensorsArray = doc.createNestedArray("sensors");
+
+    for (int i = 0; i < 2; i++) {
+        JsonObject sensorData = sensorsArray.createNestedObject();
+        sensorData["index"] = i;
+        sensorData["temperature"] = getTemperatureNonBlocking(i);  // Используем асинхронное чтение
+        sensorData["address"] = getSensorAddress(i);
+    }
 }

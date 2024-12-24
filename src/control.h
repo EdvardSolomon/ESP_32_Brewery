@@ -1,17 +1,16 @@
 #ifndef CONTROL_H
 #define CONTROL_H
 
-extern bool pumpEnabled;
-extern int pumpPWMLevel;
-extern bool ssrEnabled;
-extern int ssrPWMLevel;
+#include <Arduino.h>
+#include <ArduinoJson.h>
 
 void initControl();
-void updatePumpPWM();
-void updateSSRPWM();
-bool togglePump();
-bool toggleSSR();
+void togglePump();
 void setPumpPWMLevel(int level);
+void toggleSSR();
 void setSSRPWMLevel(int level);
+
+// Новая функция для добавления информации о контроле в JSON-документ
+void appendControlInfoToJSON(JsonDocument& doc);
 
 #endif // CONTROL_H

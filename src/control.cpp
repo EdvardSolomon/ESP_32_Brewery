@@ -1,57 +1,44 @@
 #include "control.h"
-#include <Arduino.h>
 
-
-// GPIO for pump and SSR
-#define PUMP_PIN 16
-#define SSR_PIN 19
-
-// Pump control variables
-int pumpPWMLevel = 0;
 bool pumpEnabled = false;
+int pumpPWMLevel = 0;
 
-// SSR control variables
-int ssrPWMLevel = 0;
 bool ssrEnabled = false;
+int ssrPWMLevel = 0;
 
 void initControl() {
-    ledcSetup(0, 5000, 8);
-    ledcAttachPin(PUMP_PIN, 0);
-    updatePumpPWM();
+    // Инициализация насосов и SSR
+    pumpEnabled = false;
+    pumpPWMLevel = 0;
 
-    ledcSetup(1, 5000, 8);
-    ledcAttachPin(SSR_PIN, 1);
-    updateSSRPWM();
+    ssrEnabled = false;
+    ssrPWMLevel = 0;
 }
 
-void updatePumpPWM() {
-    int dutyCycle = pumpEnabled ? map(pumpPWMLevel, 0, 100, 0, 255) : 0;
-    ledcWrite(0, dutyCycle);
-}
-
-void updateSSRPWM() {
-    int dutyCycle = ssrEnabled ? map(ssrPWMLevel, 0, 100, 0, 255) : 0;
-    ledcWrite(1, dutyCycle);
-}
-
-bool togglePump() {
+void togglePump() {
     pumpEnabled = !pumpEnabled;
-    updatePumpPWM();
-    return pumpEnabled;
-}
-
-bool toggleSSR() {
-    ssrEnabled = !ssrEnabled;
-    updateSSRPWM();
-    return ssrEnabled;
 }
 
 void setPumpPWMLevel(int level) {
-    pumpPWMLevel = constrain(level, 0, 100);
-    updatePumpPWM();
+    if (level >= 0 && level <= 100) {
+        pumpPWMLevel = level;
+    }
+}
+
+void toggleSSR() {
+    ssrEnabled = !ssrEnabled;
 }
 
 void setSSRPWMLevel(int level) {
-    ssrPWMLevel = constrain(level, 0, 100);
-    updateSSRPWM();
+    if (level >= 0 && level <= 100) {
+        ssrPWMLevel = level;
+    }
+}
+
+void appendControlInfoToJSON(JsonDocument& doc) {
+    JsonObject control = doc.createNestedObject("control");
+    control["pump_enabled"] = pumpEnabled;
+    control["pump_pwm"] = pumpPWMLevel;
+    control["ssr_enabled"] = ssrEnabled;
+    control["ssr_pwm"] = ssrPWMLevel;
 }

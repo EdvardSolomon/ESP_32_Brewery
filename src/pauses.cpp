@@ -1,14 +1,33 @@
 #include "pauses.h"
+#include <Arduino.h>
 
-// Глобальная переменная для хранения пауз
-Pause pauses[MAX_PAUSES];
-int pauseCount = 1; // Текущее количество пауз
+Pause pauses[10];
+int pauseCount = 0;
 
-// Инициализация пауз значениями по умолчанию
 void initPauses() {
-    for (int i = 0; i < MAX_PAUSES; i++) {
-        pauses[i].temperature = 50.0; // Температура по умолчанию
-        pauses[i].hysteresis = 3.0;   // Гистерезис по умолчанию
-        pauses[i].time = 10;          // Время по умолчанию
+    pauseCount = 0; // Инициализация
+}
+
+void setPauseCount(int count) {
+    if (count >= 0 && count <= 10) {
+        pauseCount = count;
+    }
+}
+
+void updatePause(int index, float temperature, float hysteresis, int time) {
+    if (index >= 0 && index < pauseCount) {
+        pauses[index] = {temperature, hysteresis, time};
+    }
+}
+
+void appendPausesInfoToJSON(JsonDocument& doc) {
+    JsonArray pausesArray = doc.createNestedArray("pauses");
+
+    for (int i = 0; i < pauseCount; i++) {
+        JsonObject pauseData = pausesArray.createNestedObject();
+        pauseData["index"] = i + 1; // Индексы начинаются с 1
+        pauseData["temperature"] = pauses[i].temperature;
+        pauseData["hysteresis"] = pauses[i].hysteresis;
+        pauseData["time"] = pauses[i].time;
     }
 }
