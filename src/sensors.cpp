@@ -1,3 +1,4 @@
+#include <Arduino.h>
 #include "sensors.h"
 #include <OneWire.h>
 #include <DallasTemperature.h>
