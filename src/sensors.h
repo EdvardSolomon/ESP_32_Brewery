@@ -4,10 +4,20 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 
-void initSensors();
-void requestTemperature();  // Асинхронный запрос температуры
-float getTemperatureNonBlocking(int sensorIndex);
-String getSensorAddress(int sensorIndex);
-void appendSensorsInfoToJSON(JsonDocument& doc);
+class Sensors {
+private:
+    float temperatures[2];
+    String addresses[2];
+    unsigned long lastRequestTime;
+
+public:
+    Sensors();
+
+    void init();
+    void requestTemperatures();       // Асинхронный запрос температуры
+    float getTemperature(int index);
+    String getAddress(int index);
+    void appendToJSON(JsonObject& doc);
+};
 
 #endif // SENSORS_H

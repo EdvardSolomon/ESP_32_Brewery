@@ -1,18 +1,22 @@
 #include "websocket.h"
 
-WebSocketsServer webSocket(80);
+WebSocketsServer webSocket(8080);
 WebSocketMessageHandler messageHandler = nullptr;
 
 void initWebSocket(WebSocketMessageHandler handler) {
-    messageHandler = handler; // Устанавливаем колбэк
+    messageHandler = handler;
+
     webSocket.begin();
-    webSocket.onEvent([](uint8_t clientNum, WStype_t type, uint8_t* payload, size_t length) {
-        if (type == WStype_TEXT && messageHandler) {
+    webSocket.onEvent([](uint8_t num, WStype_t type, uint8_t* payload, size_t length) {
+        if (type == WStype_TEXT) {
             String message = String((char*)payload);
-            messageHandler(message); // Вызываем обработчик
+            if (messageHandler) {
+                messageHandler(message);
+            }
         }
     });
-    Serial.println("WebSocket сервер запущен");
+
+    Serial.println("WebSocket server initialized");
 }
 
 void handleWebSocket() {
@@ -20,5 +24,5 @@ void handleWebSocket() {
 }
 
 void sendMessageToAll(const String& message) {
-    webSocket.broadcastTXT(message.c_str());
+    webSocket.broadcastTXT(message);
 }
