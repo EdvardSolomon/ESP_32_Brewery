@@ -16,6 +16,8 @@ private:
     Sensors sensors;
     Pause pauses[10];
     int pauseCount;
+    int remainingTime;
+    int lastTimerUpdate;
     bool isAutomatic;
     String brewStatus;
 

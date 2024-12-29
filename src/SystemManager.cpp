@@ -3,13 +3,13 @@
 
 SystemManager* SystemManager::instance = nullptr;
 
-SystemManager::SystemManager() : isAutomatic(true), brewStatus("Ожидание, ошибок нет"), lastBroadcastTime(0), broadcastInterval(1000) {
+SystemManager::SystemManager() : isAutomatic(true), brewStatus("Ожидание, ошибок нет"), lastBroadcastTime(0), broadcastInterval(1000), remainingTime(-1), lastTimerUpdate(0) {
     instance = this;
 }
 
 void SystemManager::init() {
     // Инициализация насоса
-    pump.init(12, 14); // controlPin = 7, pwmPin = 8
+    pump.init(12, 14); // controlPin = 12, pwmPin = 14
 
     // Инициализация SSR
     ssr.init(9, 10); // controlPin = 9, pwmPin = 10
@@ -34,7 +34,7 @@ void SystemManager::staticWebSocketHandler(const String& message) {
 
 void SystemManager::handleWebSocketMessage(const String& message) {
     StaticJsonDocument<512> doc;
-    
+
     if (deserializeJson(doc, message) == DeserializationError::Ok) {
         // Управление насосом
         if (doc.containsKey("pumpState")) {
@@ -78,6 +78,11 @@ void SystemManager::handleWebSocketMessage(const String& message) {
             isAutomatic = doc["isAutomatic"].as<bool>();
         }
 
+        // Управление автоматическим режимом
+        if (doc.containsKey("remainingTime")) {
+            remainingTime = doc["remainingTime"].as<int>();
+        }
+
         // Обновление статуса варки
         if (doc.containsKey("brewStatus")) {
             brewStatus = doc["brewStatus"].as<String>();
@@ -88,6 +93,24 @@ void SystemManager::handleWebSocketMessage(const String& message) {
 
 void SystemManager::handlePeriodicTasks() {
     unsigned long currentTime = millis();
+
+    // Обновление состояния таймера раз в секунду
+    if (remainingTime >= 0 && currentTime - lastTimerUpdate >= 1000) {
+        if (remainingTime > 0) {
+            remainingTime--;
+            Serial.println("Remaining time updated: " + String(remainingTime) + " seconds.");
+        }
+
+        lastTimerUpdate = currentTime;
+
+        // Если время истекло, выключаем насос и SSR
+        if (remainingTime == 0) {
+            pump.setState(false);
+            ssr.setState(false);
+            remainingTime = -1; // Устанавливаем в -1, чтобы обозначить "таймер остановлен"
+            Serial.println("Manual timer finished: Pump and SSR turned off.");
+        }
+    }
 
     // Периодическая отправка состояния
     if (currentTime - lastBroadcastTime >= broadcastInterval) {
@@ -114,6 +137,9 @@ String SystemManager::getStateJSON() {
     JsonObject ssrState = doc.createNestedObject("ssrState");
     ssrState["enabled"] = ssr.isEnabled();
     ssrState["pwm"] = map(ssr.getPWMLevel(), 0, 255, 0, 100);
+
+    // Информация о таймере
+    doc["remainingTime"] = remainingTime;
 
     // Информация о паузах
     JsonArray pausesArray = doc.createNestedArray("pauses");
