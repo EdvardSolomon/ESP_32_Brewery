@@ -22,6 +22,8 @@ private:
     unsigned long lastBroadcastTime;
     unsigned long broadcastInterval;
 
+    static SystemManager* instance;
+
 public:
     SystemManager();
 
@@ -41,6 +43,8 @@ public:
 
     void setBrewStatus(const String& status);
     String getBrewStatus() const;            
+
+    static void staticWebSocketHandler(const String& message);
 };
 
 #endif // SYSTEM_MANAGER_H

@@ -1,11 +1,15 @@
 #include "SystemManager.h"
 #include "WebSocket.h"
 
-SystemManager::SystemManager() : isAutomatic(true), brewStatus("Ожидание, ошибок нет"), lastBroadcastTime(0), broadcastInterval(1000) {}
+SystemManager* SystemManager::instance = nullptr;
+
+SystemManager::SystemManager() : isAutomatic(true), brewStatus("Ожидание, ошибок нет"), lastBroadcastTime(0), broadcastInterval(1000) {
+    instance = this;
+}
 
 void SystemManager::init() {
     // Инициализация насоса
-    pump.init(7, 8); // controlPin = 7, pwmPin = 8
+    pump.init(12, 14); // controlPin = 7, pwmPin = 8
 
     // Инициализация SSR
     ssr.init(9, 10); // controlPin = 9, pwmPin = 10
@@ -13,20 +17,24 @@ void SystemManager::init() {
     // Инициализация сенсоров
     sensors.init();
 
-    // Инициализация WebSocket и обработчика
-    initWebSocket([this](const String& message) {
-        this->handleWebSocketMessage(message);
-    });
-
-    Serial.println("SystemManager initialized");
+    // Инициализация WebSocket
+    initWebSocket(staticWebSocketHandler);
 }
 
+
 void SystemManager::handleWebSocket() {
-    handleWebSocket();
+    ::handleWebSocket();
+}
+
+void SystemManager::staticWebSocketHandler(const String& message) {
+    if (instance) {
+        instance->handleWebSocketMessage(message);
+    }
 }
 
 void SystemManager::handleWebSocketMessage(const String& message) {
     StaticJsonDocument<512> doc;
+    
     if (deserializeJson(doc, message) == DeserializationError::Ok) {
         // Управление насосом
         if (doc.containsKey("pumpState")) {

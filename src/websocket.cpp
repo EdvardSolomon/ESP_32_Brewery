@@ -16,6 +16,7 @@ void initWebSocket(WebSocketMessageHandler handler) {
         }
     });
 
+
     Serial.println("WebSocket server initialized");
 }
 
@@ -24,5 +25,5 @@ void handleWebSocket() {
 }
 
 void sendMessageToAll(const String& message) {
-    webSocket.broadcastTXT(message);
+    webSocket.broadcastTXT(message.c_str());
 }

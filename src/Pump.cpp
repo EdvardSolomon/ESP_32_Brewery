@@ -5,10 +5,22 @@ Pump::Pump() : enabled(false), pwmLevel(0), controlPin(-1), pwmPin(-1) {}
 void Pump::init(int controlPin, int pwmPin) {
     this->controlPin = controlPin;
     this->pwmPin = pwmPin;
-    pinMode(controlPin, OUTPUT);
-    pinMode(pwmPin, OUTPUT);
-    digitalWrite(controlPin, LOW);
-    analogWrite(pwmPin, 0);
+
+    if (controlPin == -1 || pwmPin == -1) {
+        Serial.println("Pump initialization failed: invalid pins.");
+        return;
+    }
+
+    Serial.print("Configuring Pump control pin: ");
+    Serial.println(controlPin);
+    pinMode(controlPin, OUTPUT); // Устанавливаем пин включения/выключения как выход
+    Serial.print("Configuring Pump PWM pin: ");
+    Serial.println(pwmPin);
+    pinMode(pwmPin, OUTPUT);     // Устанавливаем пин ШИМ как выход
+
+    digitalWrite(controlPin, LOW); // Начальное состояние: насос выключен
+    analogWrite(pwmPin, 0);        // Начальное состояние мощности: 0
+    Serial.println("Pump initialized successfully.");
 }
 
 void Pump::setState(bool state) {
@@ -17,7 +29,6 @@ void Pump::setState(bool state) {
 }
 
 void Pump::setPWM(int level) {
-    // Преобразуем уровень мощности из 0–100% в 0–255
     pwmLevel = constrain(map(level, 0, 100, 0, 255), 0, 255);
     analogWrite(pwmPin, pwmLevel);
 }

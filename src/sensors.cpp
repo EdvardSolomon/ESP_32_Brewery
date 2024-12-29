@@ -42,14 +42,17 @@ void Sensors::requestTemperatures() {
 }
 
 float Sensors::getTemperature(int index) {
-    if (index < 0 || index >= 2) return NAN;
-    
+    if (index < 0 || index >= 2) return -999;
+
     if (millis() - lastRequestTime >= 750) {
         DeviceAddress tempAddress;
         if (sensorBus.getAddress(tempAddress, index)) {
             temperatures[index] = sensorBus.getTempC(tempAddress);
+            if (temperatures[index] == DEVICE_DISCONNECTED_C) {
+                temperatures[index] = -999;
+            }
         } else {
-            temperatures[index] = NAN;
+            temperatures[index] = -999;
         }
     }
 
@@ -67,7 +70,14 @@ void Sensors::appendToJSON(JsonObject& doc) {
     for (int i = 0; i < 2; i++) {
         JsonObject sensorData = sensorsArray.createNestedObject();
         sensorData["index"] = i;
-        sensorData["temperature"] = getTemperature(i);
+
+        float temperature = getTemperature(i);
+        if (temperature == -999) {
+            sensorData["temperature"] = "Not Found";
+        } else {
+            sensorData["temperature"] = temperature;
+        }
+
         sensorData["address"] = getAddress(i);
     }
 }
